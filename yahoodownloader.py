@@ -48,7 +48,7 @@ class YahooDownloader:
         num_failures = 0
         for tic in self.ticker_list:
             temp_df = yf.download(
-                tic, start=self.start_date, end=self.end_date, proxy=proxy
+                tic, start=self.start_date, end=self.end_date, proxy=proxy, progress = False
             )
             temp_df["tic"] = tic
             if len(temp_df) > 0:

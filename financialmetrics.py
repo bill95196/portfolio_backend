@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import math
 
+import statsmodels.api as sm
+
+
 class FinancialMetrics:
     """Provides methods for calculating financial metrics based on portfolio and benchmark data.
 
@@ -16,13 +19,14 @@ class FinancialMetrics:
            Risk-free interest rate, e.g., Treasury bill rate.
     """
 
-    def __init__(self, portfolio_value, sp500_portfolio_value, risk_free_rate=0.02):
-        self.sp500_portfolio_value = sp500_portfolio_value
+    def __init__(self, portfolio_value, benchmark_portfolio_value, risk_free_rate=0.02):
+        self.benchmark_portfolio_value = benchmark_portfolio_value
         self.portfolio_value = portfolio_value
         self.risk_free_rate = risk_free_rate
         self.annualized_return_ = self.annualized_return()
         self.beta_ = self.beta()
         self.max_drawdown_ = self.max_drawdown()
+        self.std_ = self.standard_deviation()
         
     def annualized_return(self):
         """
@@ -32,7 +36,21 @@ class FinancialMetrics:
             float: annualized return
         """
         
-        return (self.portfolio_value.iloc[-1] / self.portfolio_value.iloc[0])**(252 / (len(self.portfolio_value)-1))-1 
+        daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
+        
+        return daily_returns.mean()*252
+    
+    def standard_deviation(self):
+        """
+        Calculate the standard deviation of portfolio returns.
+
+        Returns:
+            float: Standard Deviation.
+        """
+        daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
+        return np.std(daily_returns)*math.sqrt(252)
+    
+    
     
     def beta(self):
         """
@@ -42,7 +60,7 @@ class FinancialMetrics:
             float: beta
         """
         daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
-        market_daily_returns = (self.sp500_portfolio_value / self.sp500_portfolio_value.shift(1) - 1)[1:]
+        market_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
    
         beta = np.cov(daily_returns, market_daily_returns)[0][1] / np.var(market_daily_returns)
         return beta
@@ -90,10 +108,19 @@ class FinancialMetrics:
         Returns:
             float: Treynor Ratio.
         """
-
-        
         treynor_ratio = (self.annualized_return_ - self.risk_free_rate) / self.beta_
         return treynor_ratio
+    
+    def holding_period_return(self):
+        """
+        Calculate holding period return
+
+        Returns:
+            float: holding period return
+        """
+        return self.portfolio_value.iloc[-1] / self.portfolio_value.iloc[0] - 1
+        
+        
 
     def calmar_ratio(self):
         
@@ -115,12 +142,12 @@ class FinancialMetrics:
             float: Tracking Error.
         """
         daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
-        market_daily_returns = (self.sp500_portfolio_value / self.sp500_portfolio_value.shift(1) - 1)[1:]
+        market_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
 
-        tracking_error = np.std(daily_returns.values - market_daily_returns.values)
+        tracking_error = np.std(daily_returns.values - market_daily_returns.values) * math.sqrt(252)
         return tracking_error
 
-    def VaR(self, alpha=0.05):
+    def VaR(self, alpha=0.05, days = 10):
         """
         Calculate the Value at Risk (VaR) at the specified confidence level.
 
@@ -130,8 +157,12 @@ class FinancialMetrics:
         Returns:
             float: VaR value.
         """
+        import scipy.stats as st
+        z_score = st.norm.ppf(1-alpha)
+        
+        var_ = self.portfolio_value.iloc[-1] * self.std_* math.sqrt(days/252) * z_score
 
-        return None
+        return var_
 
     def best_return(self):
         """
@@ -163,5 +194,83 @@ class FinancialMetrics:
             float: Risk-free interest rate.
         """
         return None
+    
+    def CAGR(self):
+        """
+        Calculate the Compound Annual Growth Rate (CAGR).
+
+        Returns:
+            float: CAGR value.
+        """
+
+        return (self.portfolio_value.iloc[-1] / self.portfolio_value.iloc[0])**(252 / (len(self.portfolio_value)-1))-1 
+
+
+
+    def alpha(self):
+        """
+        Calculate the alpha of the portfolio.
+
+        Returns:
+            float: Alpha.
+        """
+ 
+        benchmark_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
+        benchmark_ann_return = benchmark_daily_returns.mean()*252
+        
+        return self.annualized_return_ - benchmark_ann_return
+
+    def jensens_alpha(self):
+        """
+        Calculate Jensen’s Alpha of the portfolio.
+
+        Returns:
+            float: Jensen’s Alpha.
+        """
+        benchmark_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
+        benchmark_ann_return = benchmark_daily_returns.mean()*252
+        
+        alpha = self.annualized_return_ - (self.risk_free_rate + self.beta_ * (benchmark_ann_return - self.risk_free_rate))
+        return alpha
+
+    def correlation_with_sp500(self):
+        """
+        Calculate the correlation of portfolio returns with S&P 500 returns.
+
+        Returns:
+            float: Correlation with S&P 500.
+        """
+        daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
+        benchmark_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
+        
+        return np.corrcoef(daily_returns, benchmark_daily_returns)[0][1]
+
+
+        
+    def sharpe_ratio(self):
+        """
+        Calculate the Sharpe Ratio.
+
+        Returns:
+            float: Sharpe Ratio.
+        """
+
+        return (self.annualized_return_ - self.risk_free_rate) / self.std_
+
+    def r_squared(self):
+        """
+        Calculate R-Squared of the portfolio.
+
+        Returns:
+            float: R-Squared.
+        """
+        
+     
+        daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
+        benchmark_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
+        res = sm.OLS(list(daily_returns), list(benchmark_daily_returns)).fit()
+        return res.rsquared
+        
+
 
 

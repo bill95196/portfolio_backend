@@ -58,7 +58,7 @@ class DataProcessing:
         num_failures = 0
         for tic in self.ticker_list:
             temp_df = yf.download(
-                tic, start=self.start_date, end=self.end_date, proxy=proxy
+                tic, start=self.start_date, end=self.end_date, proxy=proxy, progress = False
             )
             temp_df["tic"] = tic
             if len(temp_df) > 0:
@@ -145,7 +145,7 @@ class DataProcessing:
         pd.Series
             SP500 portfolio value over time.
         """
-        sp500_data = yf.download("^SPX", self.start_date, self.end_date)
+        sp500_data = yf.download("^SPX", self.start_date, self.end_date, progress = False)
         sp500_data = sp500_data.drop(['Open', 'High', 'Low', 'Volume','Adj Close'], axis=1)
         sp500_data['return'] = sp500_data['Close']/sp500_data['Close'].shift(1)-1
         sp500_data['cum'] = (sp500_data['return']+1).cumprod()
@@ -199,8 +199,11 @@ class DataProcessing:
 
 # Example usage:
 if __name__ == "__main__":
-    processor = TransactionDataProcessor("sample.csv")
-    processor.preprocess_data()
+    
+    Start_Date = '2023-05-22'
+    End_Date = '2023-11-03'
+    csv_file = 'sample.csv'
+    processor = DataProcessing(Start_Date, End_Date, csv_file)
+   
 
-    # Access the processed data in my_dataframe
-    print(processor.my_dataframe)
+
