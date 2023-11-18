@@ -5,6 +5,8 @@ import math
 
 import statsmodels.api as sm
 
+from dataprocessing import DataProcessing
+
 
 class FinancialMetrics:
     """Provides methods for calculating financial metrics based on portfolio and benchmark data.
@@ -19,7 +21,8 @@ class FinancialMetrics:
            Risk-free interest rate, e.g., Treasury bill rate.
     """
 
-    def __init__(self, portfolio_value, benchmark_portfolio_value, risk_free_rate=0.02):
+    def __init__(self, portfolio_value, benchmark_portfolio_value, risk_free_rate=0.02,
+                 extended_portfolio_value = None, extended_benchmark_portoflio_value = None):
         self.benchmark_portfolio_value = benchmark_portfolio_value
         self.portfolio_value = portfolio_value
         self.risk_free_rate = risk_free_rate
@@ -27,6 +30,10 @@ class FinancialMetrics:
         self.beta_ = self.beta()
         self.max_drawdown_ = self.max_drawdown()
         self.std_ = self.standard_deviation()
+        self.extended_portfolio_value = extended_portfolio_value
+        self.extended_benchmark_portoflio_value = extended_benchmark_portoflio_value
+        #extened data frame and optionally imported it into the financial metrics class, only
+        #use these extened portfolios when len(portoflio) <= 10
         
     def annualized_return(self):
         """
@@ -35,10 +42,11 @@ class FinancialMetrics:
         Returns:
             float: annualized return
         """
-        
         daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
-        
-        return daily_returns.mean()*252
+        if len(daily_returns) <= 10:
+            return (self.extended_portfolio_value / self.extended_portfolio_value.shift(1) - 1)[1:]
+        else:
+            return daily_returns.mean()*252
     
     def standard_deviation(self):
         """
@@ -270,7 +278,6 @@ class FinancialMetrics:
         benchmark_daily_returns = (self.benchmark_portfolio_value / self.benchmark_portfolio_value.shift(1) - 1)[1:]
         res = sm.OLS(list(daily_returns), list(benchmark_daily_returns)).fit()
         return res.rsquared
-        
 
 
 
