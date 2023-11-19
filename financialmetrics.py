@@ -210,8 +210,11 @@ class FinancialMetrics:
         Returns:
             float: CAGR value.
         """
+        if len(self.portfolio_value) <= 10:
+            return (self.extended_portfolio_value.iloc[-1] / self.extended_portfolio_value.iloc[0])**(252 / (len(self.extended_portfolio_value)-1))-1
+        else:
+            return (self.portfolio_value.iloc[-1] / self.portfolio_value.iloc[0])**(252 / (len(self.portfolio_value)-1))-1
 
-        return (self.portfolio_value.iloc[-1] / self.portfolio_value.iloc[0])**(252 / (len(self.portfolio_value)-1))-1 
 
 
 
