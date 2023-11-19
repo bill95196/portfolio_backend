@@ -44,7 +44,7 @@ class FinancialMetrics:
         """
         daily_returns = (self.portfolio_value / self.portfolio_value.shift(1) - 1)[1:]
         if len(daily_returns) <= 10:
-            return (self.extended_portfolio_value / self.extended_portfolio_value.shift(1) - 1)[1:]
+            return (self.extended_portfolio_value / self.extended_portfolio_value.shift(1) - 1)[1:].mean()*252
         else:
             return daily_returns.mean()*252
     
