@@ -1,8 +1,8 @@
+import datetime
 
 import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
-
 
 
 class DataProcessing:
@@ -42,7 +42,12 @@ class DataProcessing:
         self.portfolio_value = self.merge_data() 
         self.sp500_portfolio = self.calculate_sp500_portfolio_value()
     
-
+        if len(self.portfolio_value) <= 10:
+            start_date_time = datetime.strptime(self.start_date, "%Y-%m-%d")
+            self.start_date = start_date_time - datetime.timedelta(months = 1)
+            self.extended_daily_returns_df = self.daily_return_data()
+            self.extended_portfolio_value = self.merge_data()
+            self.extended_sp500_portfolio = self.calculate_sp500_portfolio_value()
         
 
     def daily_return_data(self, proxy=None):
